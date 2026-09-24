@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* ---------- Pulsing fire markers (used by MapView.jsx) ---------- */
+
+/* Removes Leaflet's default white box around custom markers */
+.fire-marker {
+  background: transparent;
+  border: none;
+}
+
+/* The solid dot. --c is the category color, set from the component. */
+.fire-dot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 8px var(--c);
+}
+
+/* The ring that spreads outward and fades, repeating forever */
+.fire-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: var(--c);
+  animation: fire-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+/* High-severity sites pulse faster */
+.fire-dot.fast::after {
+  animation-duration: 0.9s;
+}
+
+/* The selected site gets a thicker white border */
+.fire-dot.selected {
+  border-color: #ffffff;
+  border-width: 3px;
+}
+
+@keyframes fire-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
