@@ -98,7 +98,21 @@ def make_demo_hotspots(db):
 def main():
     init_db()
     db = SessionLocal()
+
     try:
+        # Check whether demo site already exists.
+        # This prevents duplicate demo data after Render restarts.
+        existing_site = (
+            db.query(IndustrialSite)
+            .filter(IndustrialSite.osm_id == "demo/refinery/1")
+            .first()
+        )
+
+        if existing_site:
+            print("Demo data already exists.")
+            print("Skipping seed to avoid duplicate records.")
+            return
+
         print("Seeding demo industrial site...")
         make_demo_site(db)
 
@@ -114,11 +128,12 @@ def main():
         print("Evaluating alerts...")
         alerts = evaluate_and_raise_alerts(db, hotspots)
 
-        print(f"Done. Seeded {len(hotspots)} hotspots, raised {len(alerts)} alert(s).")
-        print("Hit GET /api/alerts to see the accident_explosion alert fire.")
+        print(
+            f"Done. Seeded {len(hotspots)} hotspots, "
+            f"raised {len(alerts)} alert(s)."
+        )
+
+        print("Hit GET /api/alerts to see the accident_explosion alert.")
+
     finally:
         db.close()
-
-
-if __name__ == "__main__":
-    main()
