@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { CATEGORIES, SITES, ALERTS } from './data/mockData'
+import { fetchDashboardData, fetchHotspotHistory } from './data/api'
 import MapView from './components/MapView'
 import CategoryLegend from './components/CategoryLegend'
 import SiteDetailPanel from './components/SiteDetailPanel'
@@ -22,6 +23,10 @@ function isPhoneLayout() {
 }
 
 function App() {
+  const [sites, setSites] = useState(SITES)
+  const [alerts, setAlerts] = useState(ALERTS)
+  const [dataSource, setDataSource] = useState('loading')
+  const [apiError, setApiError] = useState('')
   // Shared memory: which site is selected (null = none)
   const [selectedSiteId, setSelectedSiteId] = useState(null)
 
@@ -34,10 +39,50 @@ function App() {
   const mapSectionRef = useRef(null)
   const detailRef = useRef(null)
 
+  useEffect(() => {
+    let active = true
+    let controller
+    async function refresh() {
+      controller = new AbortController()
+      try {
+        const data = await fetchDashboardData(controller.signal)
+        if (!active) return
+        setSites(data.sites)
+        setAlerts(data.alerts)
+        setDataSource('api')
+        setApiError('')
+      } catch (error) {
+        if (!active || error.name === 'AbortError') return
+        setDataSource((current) => current === 'api' ? 'api-error' : 'demo')
+        setApiError(error.message)
+      }
+    }
+    refresh()
+    const intervalId = window.setInterval(refresh, 60_000)
+    return () => {
+      active = false
+      controller?.abort()
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!selectedSiteId || dataSource !== 'api') return undefined
+    const controller = new AbortController()
+    fetchHotspotHistory(selectedSiteId, controller.signal)
+      .then((history) => setSites((current) => current.map((site) =>
+        site.id === selectedSiteId ? { ...site, history } : site
+      )))
+      .catch((error) => {
+        if (error.name !== 'AbortError') setApiError(error.message)
+      })
+    return () => controller.abort()
+  }, [selectedSiteId, dataSource])
+
   // Only the sites and alerts whose category is switched on
-  const visibleSites = SITES.filter((site) => activeCategories[site.category])
-  const visibleAlerts = ALERTS.filter((alert) => activeCategories[alert.category])
-  const selectedSite = SITES.find((site) => site.id === selectedSiteId)
+  const visibleSites = sites.filter((site) => activeCategories[site.category])
+  const visibleAlerts = alerts.filter((alert) => activeCategories[alert.category])
+  const selectedSite = sites.find((site) => site.id === selectedSiteId)
 
   // Flip one category on/off
   function toggleCategory(key) {
@@ -71,6 +116,16 @@ function App() {
         <p className="text-xs text-slate-400">Demo region: Panipat, Haryana</p>
       </header>
 
+      {dataSource !== 'api' && (
+        <div className={`px-4 py-2 text-xs ${dataSource === 'api-error' ? 'bg-red-950 text-red-200' : 'bg-amber-950 text-amber-200'}`} role="status">
+          {dataSource === 'loading'
+            ? 'Connecting to backend...'
+            : dataSource === 'api-error'
+              ? `Backend refresh failed; showing last data. ${apiError}`
+              : `Backend unavailable; showing demo data. ${apiError}`}
+        </div>
+      )}
+
       {/* Key numbers (they follow the category filter) */}
       <SummaryBar sites={visibleSites} alerts={visibleAlerts} />
 
@@ -94,6 +149,7 @@ function App() {
           <CategoryLegend
             activeCategories={activeCategories}
             onToggle={toggleCategory}
+            sites={sites}
           />
 
           {/* This wrapper is the scroll target for the detail panel */}

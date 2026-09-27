@@ -20,8 +20,8 @@ function AlertsFeed({ alerts, selectedSiteId, onSelectSite }) {
 
       <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
         {alerts.map((alert) => {
-          const category = CATEGORIES[alert.category]
-          const isHigh = alert.severity === 'high'
+          const category = CATEGORIES[alert.category] || CATEGORIES.unclassified
+          const isHigh = alert.severity === 'high' || alert.severity === 'critical'
           const isSelected = alert.siteId === selectedSiteId
           const timeText = new Date(alert.time).toLocaleString('en-IN', {
             day: 'numeric',

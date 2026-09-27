@@ -15,7 +15,9 @@ function StatBox({ label, value, valueClass = '' }) {
 }
 
 function SummaryBar({ sites, alerts }) {
-  const highCount = alerts.filter((alert) => alert.severity === 'high').length
+  const highCount = alerts.filter(
+    (alert) => alert.severity === 'high' || alert.severity === 'critical'
+  ).length
 
   // Hottest site = the one with the biggest FRP (heat power)
   const hottest = sites.reduce(

@@ -3,9 +3,9 @@
 // sites belong to it. Clicking a row switches that category on or off.
 // It receives the on/off memory and the toggle function from App.jsx.
 
-import { CATEGORIES, SITES } from '../data/mockData'
+import { CATEGORIES } from '../data/mockData'
 
-function CategoryLegend({ activeCategories, onToggle }) {
+function CategoryLegend({ activeCategories, onToggle, sites }) {
   return (
     <div className="rounded-lg bg-slate-700/50 p-3">
       <h2 className="text-sm font-semibold mb-1">Categories</h2>
@@ -14,7 +14,7 @@ function CategoryLegend({ activeCategories, onToggle }) {
       <div className="space-y-1">
         {Object.entries(CATEGORIES).map(([key, cat]) => {
           const isOn = activeCategories[key]
-          const count = SITES.filter((site) => site.category === key).length
+          const count = sites.filter((site) => site.category === key).length
 
           return (
             <button

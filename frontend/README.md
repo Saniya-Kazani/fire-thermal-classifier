@@ -1,16 +1,24 @@
-# React + Vite
+# Fire Thermal Classifier Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Run locally
 
-Currently, two official plugins are available:
+```sh
+npm install
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Set the public FastAPI service origin in `.env.local`:
 
-## React Compiler
+```env
+VITE_API_BASE_URL=https://fire-thermal-classifier.onrender.com
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The dashboard reads `/api/hotspots`, `/api/alerts`, and the selected hotspot's
+`/api/hotspots/{id}/history` endpoint. When the backend is unavailable, it
+shows demo data with a visible warning.
 
-## Expanding the ESLint configuration
+## Vercel
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Set `VITE_API_BASE_URL` to `https://fire-thermal-classifier.onrender.com` in the
+Vercel project's Environment Variables, then redeploy. Never put a database URL
+or password in a `VITE_` variable; Vite exposes those values in browser code.

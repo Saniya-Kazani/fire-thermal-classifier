@@ -9,6 +9,8 @@ export const CATEGORIES = {
   crop_burning: { label: 'Crop Burning', color: '#eab308' },
   coal_seam_fire: { label: 'Coal-Seam Fire', color: '#7c3aed' },
   wildfire: { label: 'Wildfire', color: '#16a34a' },
+  false_alarm: { label: 'Possible False Alarm', color: '#64748b' },
+  unclassified: { label: 'Needs Review', color: '#06b6d4' },
 }
 
 // Makes 14 days of fake history ending on 23 Sep 2026.

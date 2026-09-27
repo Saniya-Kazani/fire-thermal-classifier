@@ -92,7 +92,7 @@ function MapView({ sites, selectedSiteId, onSelectSite }) {
       <CursorReadout />
 
       {sites.map((site) => {
-        const color = CATEGORIES[site.category].color
+        const color = CATEGORIES[site.category]?.color || '#94a3b8'
         const isSelected = site.id === selectedSiteId
 
         return (

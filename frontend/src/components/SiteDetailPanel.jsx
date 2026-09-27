@@ -36,7 +36,7 @@ function SiteDetailPanel({ site, onClose }) {
     )
   }
 
-  const category = CATEGORIES[site.category]
+  const category = CATEGORIES[site.category] || CATEGORIES.unclassified
   const detectedText = new Date(site.detectedAt).toLocaleString('en-IN', {
     day: 'numeric',
     month: 'short',
@@ -68,20 +68,23 @@ function SiteDetailPanel({ site, onClose }) {
 
       {/* Key numbers */}
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <Stat label="Confidence" value={`${site.confidence}%`} />
+        <Stat label="Confidence" value={site.confidence ? `${site.confidence}%` : 'N/A'} />
         <Stat label="Heat power (FRP)" value={`${site.frp} MW`} />
         <Stat label="Brightness" value={`${site.brightness} K`} />
         <Stat label="Satellite" value={site.satellite} />
       </div>
       <p className="text-xs text-slate-400 mb-3">Detected: {detectedText}</p>
+      {site.classificationReason && (
+        <p className="text-xs text-slate-300 mb-3">{site.classificationReason}</p>
+      )}
 
       {/* History chart */}
-      <p className="text-xs font-semibold mb-1">Heat power, last 14 days (MW)</p>
-      <div className="h-44">
+      <p className="text-xs font-semibold mb-1">Heat power history (MW)</p>
+      {site.history.length ? <div className="h-44">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={site.history} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid stroke="#475569" strokeDasharray="3 3" />
-            <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 10 }} interval={3} />
+            <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
             <YAxis stroke="#94a3b8" tick={{ fontSize: 10 }} />
             <Tooltip
               contentStyle={{
@@ -100,7 +103,7 @@ function SiteDetailPanel({ site, onClose }) {
             />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </div> : <p className="text-xs text-slate-400">No history available for this detection.</p>}
     </div>
   )
 }
