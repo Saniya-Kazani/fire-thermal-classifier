@@ -1,6 +1,8 @@
 import { CATEGORIES } from './mockData'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || 'https://fire-thermal-classifier.onrender.com'
+).replace(/\/$/, '')
 
 const CATEGORY_MAP = {
   gas_flare: 'industrial_flare',
@@ -59,7 +61,6 @@ async function getJson(path, signal) {
 }
 
 export async function fetchDashboardData(signal) {
-  if (!API_BASE_URL) throw new Error('VITE_API_BASE_URL is not configured')
   const [hotspotRows, alertRows] = await Promise.all([
     getJson('/api/hotspots?limit=1000', signal),
     getJson('/api/alerts?limit=200', signal),

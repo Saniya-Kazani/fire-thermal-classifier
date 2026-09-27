@@ -7,7 +7,8 @@ npm install
 npm run dev
 ```
 
-Set the public FastAPI service origin in `.env.local`:
+The dashboard defaults to the deployed Render API. To override it locally,
+set the public FastAPI service origin in `.env.local`:
 
 ```env
 VITE_API_BASE_URL=https://fire-thermal-classifier.onrender.com
@@ -19,6 +20,7 @@ shows demo data with a visible warning.
 
 ## Vercel
 
-Set `VITE_API_BASE_URL` to `https://fire-thermal-classifier.onrender.com` in the
-Vercel project's Environment Variables, then redeploy. Never put a database URL
-or password in a `VITE_` variable; Vite exposes those values in browser code.
+The default Render API origin works without a Vercel environment variable. Set
+`VITE_API_BASE_URL` only if overriding the API origin, then redeploy. Never put
+a database URL or password in a `VITE_` variable; Vite exposes those values in
+browser code.
