@@ -81,3 +81,23 @@ export async function fetchHotspotHistory(hotspotId, signal) {
     brightness: Number(point.brightness || 0),
   }))
 }
+
+export async function fetchIndustrialAISummary(signal) {
+  return getJson('/api/industrial-ai/summary', signal)
+}
+
+export async function fetchIndustrialAIAlerts({ priority, search, limit = 500, offset = 0 } = {}, signal) {
+  const params = new URLSearchParams()
+  if (priority) params.append('priority', priority)
+  if (search) params.append('search', search)
+  params.append('limit', limit)
+  params.append('offset', offset)
+  return getJson(`/api/industrial-ai/alerts?${params.toString()}`, signal)
+}
+
+export function getIndustrialAICsvUrl({ priority, search } = {}) {
+  const params = new URLSearchParams()
+  if (priority) params.append('priority', priority)
+  if (search) params.append('search', search)
+  return `${API_BASE_URL}/api/industrial-ai/export-csv?${params.toString()}`
+}

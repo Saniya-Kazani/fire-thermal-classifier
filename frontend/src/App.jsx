@@ -15,6 +15,7 @@ import CategoryLegend from './components/CategoryLegend'
 import SiteDetailPanel from './components/SiteDetailPanel'
 import AlertsFeed from './components/AlertsFeed'
 import SummaryBar from './components/SummaryBar'
+import IndustrialAIDashboard from './components/IndustrialAIDashboard'
 
 // Same width where Tailwind's "lg:" layout switches on.
 // Below this, the page is a single stacked column (phone layout).
@@ -23,6 +24,7 @@ function isPhoneLayout() {
 }
 
 function App() {
+  const [activeTab, setActiveTab] = useState('classifier') // 'classifier' | 'industrial-ai'
   const [sites, setSites] = useState(SITES)
   const [alerts, setAlerts] = useState(ALERTS)
   const [dataSource, setDataSource] = useState('loading')
@@ -108,15 +110,42 @@ function App() {
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col bg-slate-900 text-white">
-      {/* Top bar */}
-      <header className="px-4 py-3 bg-slate-800 border-b border-slate-700">
-        <h1 className="text-base sm:text-lg font-bold">
-          Industrial Fire & Thermal Source Classification
-        </h1>
-        <p className="text-xs text-slate-400">Demo region: Panipat, Haryana</p>
+      {/* Top bar with Navigation Tabs */}
+      <header className="px-4 py-3 bg-slate-800 border-b border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-base sm:text-lg font-bold">
+            Industrial Fire & Thermal Source Classification System
+          </h1>
+          <p className="text-xs text-slate-400">SIH 2026 - Integrated Multi-Model Thermal Intelligence</p>
+        </div>
+
+        {/* View Switcher Tabs */}
+        <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 self-start sm:self-auto">
+          <button
+            onClick={() => setActiveTab('classifier')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              activeTab === 'classifier'
+                ? 'bg-amber-600 text-white shadow'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            🔥 Classifier View
+          </button>
+          <button
+            onClick={() => setActiveTab('industrial-ai')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center space-x-1 ${
+              activeTab === 'industrial-ai'
+                ? 'bg-amber-600 text-white shadow'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <span>🤖 Industrial AI Dashboard</span>
+            <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded-full uppercase font-bold">New</span>
+          </button>
+        </div>
       </header>
 
-      {dataSource !== 'api' && (
+      {dataSource !== 'api' && activeTab === 'classifier' && (
         <div className={`px-4 py-2 text-xs ${dataSource === 'api-error' ? 'bg-red-950 text-red-200' : 'bg-amber-950 text-amber-200'}`} role="status">
           {dataSource === 'loading'
             ? 'Connecting to backend...'
@@ -126,44 +155,52 @@ function App() {
         </div>
       )}
 
-      {/* Key numbers (they follow the category filter) */}
-      <SummaryBar sites={visibleSites} alerts={visibleAlerts} />
+      {activeTab === 'industrial-ai' ? (
+        <div className="flex-1 min-h-0">
+          <IndustrialAIDashboard />
+        </div>
+      ) : (
+        <>
+          {/* Key numbers (they follow the category filter) */}
+          <SummaryBar sites={visibleSites} alerts={visibleAlerts} />
 
-      <main className="flex flex-col lg:flex-row flex-1 lg:min-h-0">
-        {/* Map: fixed height on phones, fills the left side on large screens */}
-        <section
-          ref={mapSectionRef}
-          className="relative h-[55vh] lg:h-auto lg:flex-1"
-        >
-          <div className="absolute inset-2 lg:inset-4">
-            <MapView
-              sites={visibleSites}
-              selectedSiteId={selectedSiteId}
-              onSelectSite={setSelectedSiteId}
-            />
-          </div>
-        </section>
+          <main className="flex flex-col lg:flex-row flex-1 lg:min-h-0">
+            {/* Map: fixed height on phones, fills the left side on large screens */}
+            <section
+              ref={mapSectionRef}
+              className="relative h-[55vh] lg:h-auto lg:flex-1"
+            >
+              <div className="absolute inset-2 lg:inset-4">
+                <MapView
+                  sites={visibleSites}
+                  selectedSiteId={selectedSiteId}
+                  onSelectSite={setSelectedSiteId}
+                />
+              </div>
+            </section>
 
-        {/* Panels: below the map on phones, a side column on large screens */}
-        <aside className="w-full lg:w-80 bg-slate-800 border-t lg:border-t-0 lg:border-l border-slate-700 p-4 lg:overflow-y-auto space-y-4">
-          <CategoryLegend
-            activeCategories={activeCategories}
-            onToggle={toggleCategory}
-            sites={sites}
-          />
+            {/* Panels: below the map on phones, a side column on large screens */}
+            <aside className="w-full lg:w-80 bg-slate-800 border-t lg:border-t-0 lg:border-l border-slate-700 p-4 lg:overflow-y-auto space-y-4">
+              <CategoryLegend
+                activeCategories={activeCategories}
+                onToggle={toggleCategory}
+                sites={sites}
+              />
 
-          {/* This wrapper is the scroll target for the detail panel */}
-          <div ref={detailRef}>
-            <SiteDetailPanel site={selectedSite} onClose={closeDetails} />
-          </div>
+              {/* This wrapper is the scroll target for the detail panel */}
+              <div ref={detailRef}>
+                <SiteDetailPanel site={selectedSite} onClose={closeDetails} />
+              </div>
 
-          <AlertsFeed
-            alerts={visibleAlerts}
-            selectedSiteId={selectedSiteId}
-            onSelectSite={setSelectedSiteId}
-          />
-        </aside>
-      </main>
+              <AlertsFeed
+                alerts={visibleAlerts}
+                selectedSiteId={selectedSiteId}
+                onSelectSite={setSelectedSiteId}
+              />
+            </aside>
+          </main>
+        </>
+      )}
     </div>
   )
 }

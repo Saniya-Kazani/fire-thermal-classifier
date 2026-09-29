@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import init_db
 from app.scheduler import start_scheduler, stop_scheduler
-from app.routers import hotspots, sites, alerts, ingestion
+from app.routers import hotspots, sites, alerts, ingestion, industrial_ai
 
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ app.include_router(hotspots.router)
 app.include_router(sites.router)
 app.include_router(alerts.router)
 app.include_router(ingestion.router)
+app.include_router(industrial_ai.router)
 
 
 @app.get("/api/health")
