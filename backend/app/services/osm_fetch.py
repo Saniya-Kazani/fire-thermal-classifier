@@ -4,24 +4,45 @@ Overpass API. We query a small set of tags that reliably mark the facility
 types this project cares about: refineries, power plants, steel mills/works,
 LNG/gas terminals, and mining land (useful for filtering out coal-seam fires
 that sit on mining land but outside an active industrial polygon).
+
+Overpass public servers are free and often busy (HTTP 429 / 504 / timeouts),
+so requests go through a list of mirrors with retries and an overall time
+budget (kept under ~90s so the hosting proxy does not cut the request off).
 """
 import json
 import logging
+import time
 from typing import List, Dict
 
 import requests
 from sqlalchemy.orm import Session
 from geoalchemy2.shape import from_shape
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon
 
 from app.config import settings
 from app.models.industrial_site import IndustrialSite
 
 logger = logging.getLogger(__name__)
 
-# man_made=works / landuse=industrial / power=plant / industrial=oil_refinery / etc.
+# Tried in order after settings.OVERPASS_URL. Duplicates are removed.
+FALLBACK_MIRRORS = [
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+]
+
+HEADERS = {"User-Agent": "fire-thermal-classifier/1.0 (SIH26162 student project)"}
+RETRY_STATUS = {429, 502, 503, 504}
+CONNECT_TIMEOUT_S = 8
+READ_TIMEOUT_S = 30        # per request
+TOTAL_BUDGET_S = 80        # across all mirrors/retries
+PAUSE_BETWEEN_TRIES_S = 3
+
+# Only ways are used below, so relations are not requested (keeps the
+# query light for free mirrors). Server-side timeout is kept short.
 OVERPASS_QUERY_TEMPLATE = """
-[out:json][timeout:60];
+[out:json][timeout:25];
 (
   way["man_made"="works"]({bbox});
   way["landuse"="industrial"]({bbox});
@@ -29,9 +50,6 @@ OVERPASS_QUERY_TEMPLATE = """
   way["industrial"="oil"]({bbox});
   way["industrial"="refinery"]({bbox});
   way["landuse"="quarry"]({bbox});
-  relation["man_made"="works"]({bbox});
-  relation["landuse"="industrial"]({bbox});
-  relation["power"="plant"]({bbox});
 );
 out body;
 >;
@@ -53,6 +71,60 @@ def _classify_site_type(tags: Dict) -> str:
     return "industrial_generic"
 
 
+def _overpass_urls() -> List[str]:
+    urls, seen = [], set()
+    for u in [settings.OVERPASS_URL] + FALLBACK_MIRRORS:
+        if u and u not in seen:
+            seen.add(u)
+            urls.append(u)
+    return urls
+
+
+def _post_overpass(query: str) -> dict:
+    """POST the query to each mirror in turn until one returns usable JSON."""
+    deadline = time.monotonic() + TOTAL_BUDGET_S
+    urls = _overpass_urls()
+    last_err = "no attempt made"
+
+    # Cycle through the mirrors up to twice, bounded by the time budget.
+    for url in urls + urls:
+        remaining = deadline - time.monotonic()
+        if remaining < 10:
+            break
+        try:
+            resp = requests.post(
+                url,
+                data={"data": query},
+                headers=HEADERS,
+                timeout=(CONNECT_TIMEOUT_S, min(READ_TIMEOUT_S, remaining)),
+            )
+            if resp.status_code in RETRY_STATUS:
+                last_err = f"{url} -> HTTP {resp.status_code}"
+                logger.warning("Overpass mirror busy: %s", last_err)
+                time.sleep(PAUSE_BETWEEN_TRIES_S)
+                continue
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Overpass can answer HTTP 200 with a 'remark' (timeout / out of memory).
+            if data.get("remark") and not data.get("elements"):
+                last_err = f"{url} -> remark: {data['remark'][:120]}"
+                logger.warning("Overpass returned a remark and no data: %s", last_err)
+                time.sleep(PAUSE_BETWEEN_TRIES_S)
+                continue
+            if data.get("remark"):
+                logger.warning("Overpass partial result, remark: %s", data["remark"][:120])
+
+            logger.info("Overpass OK via %s (%d elements)", url, len(data.get("elements", [])))
+            return data
+        except (requests.RequestException, ValueError) as e:
+            last_err = f"{url} -> {type(e).__name__}: {str(e)[:150]}"
+            logger.warning("Overpass request failed: %s", last_err)
+            time.sleep(PAUSE_BETWEEN_TRIES_S)
+
+    raise RuntimeError(f"All Overpass mirrors failed. Last error: {last_err}")
+
+
 def fetch_osm_industrial_polygons() -> List[Dict]:
     """
     Query Overpass and return a list of {osm_id, name, tags, polygon(shapely)}.
@@ -60,9 +132,7 @@ def fetch_osm_industrial_polygons() -> List[Dict]:
     coordinates, then reconstructs way polygons in Python.
     """
     query = OVERPASS_QUERY_TEMPLATE.format(bbox=settings.OSM_BBOX)
-    resp = requests.post(settings.OVERPASS_URL, data={"data": query}, timeout=90)
-    resp.raise_for_status()
-    data = resp.json()
+    data = _post_overpass(query)
 
     nodes = {}
     ways = []
