@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 NEAREST_LAND_USE_SQL = text("""
     SELECT land_use_type
     FROM land_use_polygons
-    WHERE ST_DWithin(geom::geography, :point::geography, 100)
-    ORDER BY ST_Distance(geom::geography, :point::geography) ASC
+    WHERE ST_DWithin(geom::geography, CAST(:point AS geography), 100)
+    ORDER BY ST_Distance(geom::geography, CAST(:point AS geography)) ASC
     LIMIT 1
 """)
 
