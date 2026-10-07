@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 # hot path that benefits from the spatial index on industrial_sites.geom.
 NEAREST_SITE_SQL = text("""
     SELECT
-        id,
-        ST_Distance(geom::geography, :point::geography) AS distance_m
-    FROM industrial_sites
-    WHERE ST_DWithin(geom::geography, :point::geography, :max_search_m)
-    ORDER BY distance_m ASC
-    LIMIT 1
+    id,
+    ST_Distance(geom::geography, CAST(:point AS geography)) AS distance_m
+FROM industrial_sites
+WHERE ST_DWithin(geom::geography, CAST(:point AS geography), :max_search_m)
+ORDER BY distance_m ASC
+LIMIT 1
 """)
 
 
